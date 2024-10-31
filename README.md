@@ -43,7 +43,7 @@ Uploading game.js to your Sprig...
 Upload completed successfully!
 ```
 
-## sprig version
+### sprig version
 View what version of SPADE is on your Sprig
 
 ```
