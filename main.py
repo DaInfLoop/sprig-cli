@@ -10,6 +10,7 @@ import threading
 import usb.core
 import subprocess
 import os
+from sys import exit
 
 class SprigGroup(click.Group):
     def get_usage(self, ctx):
@@ -131,7 +132,7 @@ def upload(file, verbose):
         print("[UPLOAD > SERIAL] Writing startup sequence")
     ser.write(b"UPLOAD")
 
-    filename = file[:-3] if file.endswith('.js') else file
+    filename = os.path.basename(file)[:-3]
     name_string = (filename + '\0' * (100 - len(filename)))[:100].encode('utf-8')
 
     if verbose:
