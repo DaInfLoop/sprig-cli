@@ -4,9 +4,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'main.py'
+      - 'requirements.txt'
   pull_request:
     branches:
       - main
+    paths:
+      - 'main.py'
+      - 'requirements.txt'
 
 jobs:
   build-linux:
