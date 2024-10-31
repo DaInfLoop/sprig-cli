@@ -12,6 +12,8 @@ import subprocess
 import os
 import sys
 
+import typing
+
 class SprigGroup(click.Group):
     def get_usage(self, ctx):
         if ctx.command.name == "cli":
@@ -245,9 +247,12 @@ def upload(file, name = None, verbose = False):
     sys.exit(0)
 
 @cli.command(cls=SprigCommand)
-@click.option('-v', '--verbose', is_flag=True)
-def flash(verbose):
+@click.argument('firmware', type=click.File('r'), default=sys.stdin)
+@click.option('-v', '--verbose', is_flag=True, help="Show verbose output")
+def flash(firmware: typing.TextIO, verbose):
     "Flash your Sprig with the latest firmware"
+
+    isTTY = os.isatty(firmware.fileno())
 
     # Check if the Sprig is connected via usb
     sprigNormal = usb.core.find(idVendor=0x2e8a, idProduct=0x000a)
@@ -261,7 +266,12 @@ def flash(verbose):
         print("Your Sprig needs to be in BOOTSEL mode to flash the firmware. For more information: https://github.com/hackclub/sprig/blob/main/docs/UPLOAD.md#bootsel")
         return sys.exit(1)
 
-    firmware = requests.get('https://sprig.hackclub.com/pico-os.uf2').content
+
+    if isTTY:
+        firmware = requests.get('https://sprig.hackclub.com/pico-os.uf2').content
+    else:
+        click.confirm("You're flashing custom firmware. This can be dangerous. Would you like to continue?", abort=True)
+        firmware = firmware.buffer.read()
 
     # find where sprig is mounted
     def find_mount_point():
