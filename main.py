@@ -10,7 +10,7 @@ import threading
 import usb.core
 import subprocess
 import os
-from sys import exit
+import sys
 
 class SprigGroup(click.Group):
     def get_usage(self, ctx):
@@ -98,7 +98,7 @@ def version(verbose):
         ser = serial.Serial(find_sprig_port(), 115200, timeout=1)
     except serial.SerialException:
         print("It seems you don't have a Sprig connected to your computer. Please connect it and try again!")
-        exit(1)
+        sys.exit(1)
 
     ver = spade_version(ser, verbose)
 
@@ -108,11 +108,20 @@ def version(verbose):
     ser.close()
 
 @cli.command(cls=SprigCommand)
-@click.argument('file', type=click.Path(exists=True))
+@click.argument('file', type=click.File('r'), default=sys.stdin)
 @click.option('-n', '--name', type=click.STRING, help="Name of the game. Defaults to file name.")
 @click.option('-v', '--verbose', is_flag=True, help="Show verbose output")
 def upload(file, name = None, verbose = False):
     "Upload a game to your Sprig."
+
+    isTTY = os.isatty(file.fileno())    
+
+    if isTTY:
+        print("Please provide a file to upload. For example: sprig upload game.js")
+        sys.exit(1)
+
+    f_name = file.name
+    f_contents = file.read()
 
     try:
         ser = serial.Serial(find_sprig_port(), 115200, timeout=1)
@@ -123,7 +132,7 @@ def upload(file, name = None, verbose = False):
     if check_legacy(ser, verbose):
         print("Your Sprig is running on legacy firmware. Please update your firmware to use this command.")
         ser.close()
-        exit(1)
+        sys.exit(1)
 
     ver = spade_version(ser, verbose)
 
@@ -134,29 +143,27 @@ def upload(file, name = None, verbose = False):
         print(f"Your Sprig is on SPADE version: {ver}")
         print(f"Please update your Sprig to the latest version: {latest}")
         ser.close()
-        exit(1)
+        sys.exit(1)
 
-    if not file.endswith('.js'):
+    if not f_name == "<stdin>" and not f_name.endswith('.js'):
         print("Sprig can only recognise .js files. Please upload a .js file.")
         ser.close()
-        exit(1)
+        sys.exit(1)
 
-    print(f"Uploading {file} to your Sprig...")
+    print(f"Uploading {f_name} to your Sprig...")
 
     if verbose:
         print("[UPLOAD > SERIAL] Writing startup sequence")
     ser.write(b"UPLOAD")
 
-    filename = os.path.basename(file)[:-3]
-    name_string = ((name if name is not None else filename) + '\0' * (100 - len(filename)))[:100].encode('utf-8')
+    name = name if name is not None else f_name
+    name_string = ((name) + '\0' * (100 - len(name)))[:100].encode('utf-8')
 
     if verbose:
         print("[UPLOAD > SERIAL] Writing file name")
     ser.write(name_string)
 
-    with open(file, 'r') as f:
-        contents = f.read()
-    buf = contents.encode('utf-8')
+    buf = f_contents.encode('utf-8')
     length = len(buf)
 
     if verbose:
@@ -223,19 +230,19 @@ def upload(file, name = None, verbose = False):
                     slots_available = int(value_split[oo_index + 2])
                     print(f"Your Sprig does not have enough memory. Blocks needed: {slots_needed}, Blocks available: {slots_available}")
                 ser.close()
-                exit(1)
+                sys.exit(1)
                 return
         else:
             time.sleep(0.1)
     else:
         print("Upload timeout. Please try again. If this happens multiple times, your Sprig might not have enough memory to store this game.")    
         ser.close()
-        exit(1)
+        sys.exit(1)
 
     thread.join()
 
     ser.close()
-    exit(0)
+    sys.exit(0)
 
 @cli.command(cls=SprigCommand)
 @click.option('-v', '--verbose', is_flag=True)
@@ -248,11 +255,11 @@ def flash(verbose):
 
     if sprig is None and sprigNormal is None:
         print("It seems you don't have a Sprig connected to your computer. Please connect it and try again!")
-        return exit(1)
+        return sys.exit(1)
     
     if sprig is None and sprigNormal is not None:
         print("Your Sprig needs to be in BOOTSEL mode to flash the firmware. For more information: https://github.com/hackclub/sprig/blob/main/docs/UPLOAD.md#bootsel")
-        return exit(1)
+        return sys.exit(1)
 
     firmware = requests.get('https://sprig.hackclub.com/pico-os.uf2').content
 
@@ -283,7 +290,7 @@ def flash(verbose):
     mount_point = find_mount_point()
     if mount_point is None:
         print("Could not find the mount point of your Sprig. Please ensure it is properly connected and try again.")
-        return exit(1)
+        return sys.exit(1)
     
     print(f"Flashing firmware to your Sprig ({mount_point})...")
 
