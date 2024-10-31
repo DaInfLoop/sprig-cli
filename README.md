@@ -34,11 +34,11 @@ Flashing firmware to your Sprig (/media/haroon/RPI-RP2)...
 Firmware flashed successfully!
 ```
 
-### sprig upload \<file.js>
-Upload a game to your Sprig!
+### sprig upload \<file.js> [--name "..."]
+Upload a game to your Sprig, and optionally give it a name to be displayed.
 
 ```
-$ sprig upload game.js
+$ sprig upload game.js --name "My Game"
 Uploading game.js to your Sprig...
 Upload completed successfully!
 ```

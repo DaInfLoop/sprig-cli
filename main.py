@@ -14,10 +14,24 @@ from sys import exit
 
 class SprigGroup(click.Group):
     def get_usage(self, ctx):
-        return "Usage: sprig <command> [options]"
+        if ctx.command.name == "cli":
+            return "Usage: sprig <command> [options]"
+        else:
+            return f"Usage: sprig {ctx.command.name} [options]"
 
     def format_usage(self, ctx, formatter):
         formatter.write_text(self.get_usage(ctx))
+
+class SprigCommand(click.Command):
+    def get_usage(self, ctx):
+        if ctx.command.name == "cli":
+            return "Usage: sprig <command> [options]"
+        else:
+            return f"Usage: sprig {ctx.command.name} [options]"
+
+    def format_usage(self, ctx, formatter):
+        formatter.write_text(self.get_usage(ctx))
+
 
 @click.group(cls=SprigGroup)
 def cli():
@@ -76,8 +90,8 @@ def check_legacy(ser, verbose):
     elif buffer.strip() == "legacy detected":
         return False
     
-@cli.command()
-@click.option('-v', '--verbose', is_flag=True)
+@cli.command(cls=SprigCommand)
+@click.option('-v', '--verbose', is_flag=True, help="Show verbose output")
 def version(verbose):
     "Get the version of your Sprig connected to this device"
     try:
@@ -93,11 +107,12 @@ def version(verbose):
 
     ser.close()
 
-@cli.command()
-@click.argument('file', type=click.Path(exists=True),)
-@click.option('-v', '--verbose', is_flag=True)
-def upload(file, verbose):
-    "Upload a game to your Sprig"
+@cli.command(cls=SprigCommand)
+@click.argument('file', type=click.Path(exists=True))
+@click.option('-n', '--name', type=click.STRING, help="Name of the game. Defaults to file name.")
+@click.option('-v', '--verbose', is_flag=True, help="Show verbose output")
+def upload(file, name = None, verbose = False):
+    "Upload a game to your Sprig."
 
     try:
         ser = serial.Serial(find_sprig_port(), 115200, timeout=1)
@@ -133,7 +148,7 @@ def upload(file, verbose):
     ser.write(b"UPLOAD")
 
     filename = os.path.basename(file)[:-3]
-    name_string = (filename + '\0' * (100 - len(filename)))[:100].encode('utf-8')
+    name_string = ((name if name is not None else filename) + '\0' * (100 - len(filename)))[:100].encode('utf-8')
 
     if verbose:
         print("[UPLOAD > SERIAL] Writing file name")
@@ -222,7 +237,7 @@ def upload(file, verbose):
     ser.close()
     exit(0)
 
-@cli.command()
+@cli.command(cls=SprigCommand)
 @click.option('-v', '--verbose', is_flag=True)
 def flash(verbose):
     "Flash your Sprig with the latest firmware"
