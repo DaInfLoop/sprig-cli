@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: sprig-cli-linux
-          path: dist/main
+          path: dist/sprig
 
   build-windows:
     runs-on: windows-latest
@@ -57,4 +57,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: sprig-cli-windows
-          path: dist/main.exe
+          path: dist/sprig.exe
