@@ -1,0 +1,60 @@
+name: Build Binaries
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build binary
+        run: pyinstaller --onefile main.py
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: sprig-cli-linux
+          path: dist/main
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build binary
+        run: pyinstaller --onefile main.py
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: sprig-cli-windows
+          path: dist/main.exe
